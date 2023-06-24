@@ -5,7 +5,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.stats import randint
 from six.moves import urllib
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
@@ -18,6 +17,8 @@ from sklearn.model_selection import (
     train_test_split,
 )
 from sklearn.tree import DecisionTreeRegressor
+
+from scipy.stats import randint
 
 DOWNLOAD_ROOT = "https://raw.githubusercontent.com/ageron/handson-ml/master/"
 HOUSING_PATH = os.path.join("datasets", "housing")
@@ -77,8 +78,9 @@ for set_ in (strat_train_set, strat_test_set):
 housing = strat_train_set.copy()
 housing.plot(kind="scatter", x="longitude", y="latitude")
 housing.plot(kind="scatter", x="longitude", y="latitude", alpha=0.1)
-
-corr_matrix = housing.corr()
+numerics = ["int16", "int32", "int64", "float64"]
+numeric_columns = housing.select_dtypes(include=numerics).columns
+corr_matrix = housing[numeric_columns].corr()
 corr_matrix["median_house_value"].sort_values(ascending=False)
 housing["rooms_per_household"] = housing["total_rooms"] / housing["households"]
 housing["bedrooms_per_room"] = housing["total_bedrooms"] / housing["total_rooms"]
@@ -110,11 +112,11 @@ lin_reg.fit(housing_prepared, housing_labels)
 housing_predictions = lin_reg.predict(housing_prepared)
 lin_mse = mean_squared_error(housing_labels, housing_predictions)
 lin_rmse = np.sqrt(lin_mse)
-lin_rmse
+print(f"Linear RMSE: {lin_rmse}")
 
 
 lin_mae = mean_absolute_error(housing_labels, housing_predictions)
-lin_mae
+print(f"Linear MAE: {lin_mae}")
 
 
 tree_reg = DecisionTreeRegressor(random_state=42)
@@ -123,7 +125,7 @@ tree_reg.fit(housing_prepared, housing_labels)
 housing_predictions = tree_reg.predict(housing_prepared)
 tree_mse = mean_squared_error(housing_labels, housing_predictions)
 tree_rmse = np.sqrt(tree_mse)
-tree_rmse
+print(f"Tree RMSE: {tree_rmse}")
 
 param_distribs = {
     "n_estimators": randint(low=1, high=200),
@@ -163,7 +165,7 @@ grid_search = GridSearchCV(
 )
 grid_search.fit(housing_prepared, housing_labels)
 
-grid_search.best_params_
+print(f"Grid search: {grid_search.best_params_}")
 cvres = grid_search.cv_results_
 for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
     print(np.sqrt(-mean_score), params)
@@ -197,3 +199,4 @@ X_test_prepared = X_test_prepared.join(pd.get_dummies(X_test_cat, drop_first=Tru
 final_predictions = final_model.predict(X_test_prepared)
 final_mse = mean_squared_error(y_test, final_predictions)
 final_rmse = np.sqrt(final_mse)
+print(f"final rmse: {final_rmse}")
